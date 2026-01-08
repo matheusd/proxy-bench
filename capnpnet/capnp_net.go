@@ -77,8 +77,8 @@ func (s *ServerSession) Close() error {
 	return nil
 }
 
-// Dial called by client
-func (s *ServerSession) Dial(ctx context.Context, call Proxy_dial) error {
+// OpenStream called by client
+func (s *ServerSession) OpenStream(ctx context.Context, call Proxy_openStream) error {
 	res, err := call.AllocResults()
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func (s *ClientSession) OpenStream() (netx.Stream, error) {
 	reader := newByteStreamReader()
 	downStream := Proxy_ByteStream_ServerToClient(reader)
 	downStream.SetFlowLimiter(flowcontrol.NewFixedLimiter(1024 * 1024 * 4))
-	future, release := proxy.Dial(context.Background(), func(p Proxy_dial_Params) error {
+	future, release := proxy.OpenStream(context.Background(), func(p Proxy_openStream_Params) error {
 		return p.SetDown(downStream)
 	})
 

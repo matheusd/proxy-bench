@@ -17,23 +17,23 @@ type Proxy capnp.Client
 // Proxy_TypeID is the unique identifier for the type Proxy.
 const Proxy_TypeID = 0x9f9ee0cb62fc453f
 
-func (c Proxy) Dial(ctx context.Context, params func(Proxy_dial_Params) error) (Proxy_dial_Results_Future, capnp.ReleaseFunc) {
+func (c Proxy) OpenStream(ctx context.Context, params func(Proxy_openStream_Params) error) (Proxy_openStream_Results_Future, capnp.ReleaseFunc) {
 
 	s := capnp.Send{
 		Method: capnp.Method{
 			InterfaceID:   0x9f9ee0cb62fc453f,
 			MethodID:      0,
 			InterfaceName: "proxy.capnp:Proxy",
-			MethodName:    "dial",
+			MethodName:    "openStream",
 		},
 	}
 	if params != nil {
 		s.ArgsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		s.PlaceArgs = func(s capnp.Struct) error { return params(Proxy_dial_Params(s)) }
+		s.PlaceArgs = func(s capnp.Struct) error { return params(Proxy_openStream_Params(s)) }
 	}
 
 	ans, release := capnp.Client(c).SendCall(ctx, s)
-	return Proxy_dial_Results_Future{Future: ans.Future()}, release
+	return Proxy_openStream_Results_Future{Future: ans.Future()}, release
 
 }
 
@@ -110,7 +110,7 @@ func (c Proxy) GetFlowLimiter() fc.FlowLimiter {
 
 // A Proxy_Server is a Proxy with a local implementation.
 type Proxy_Server interface {
-	Dial(context.Context, Proxy_dial) error
+	OpenStream(context.Context, Proxy_openStream) error
 }
 
 // Proxy_NewServer creates a new Server from an implementation of Proxy_Server.
@@ -137,31 +137,31 @@ func Proxy_Methods(methods []server.Method, s Proxy_Server) []server.Method {
 			InterfaceID:   0x9f9ee0cb62fc453f,
 			MethodID:      0,
 			InterfaceName: "proxy.capnp:Proxy",
-			MethodName:    "dial",
+			MethodName:    "openStream",
 		},
 		Impl: func(ctx context.Context, call *server.Call) error {
-			return s.Dial(ctx, Proxy_dial{call})
+			return s.OpenStream(ctx, Proxy_openStream{call})
 		},
 	})
 
 	return methods
 }
 
-// Proxy_dial holds the state for a server call to Proxy.dial.
+// Proxy_openStream holds the state for a server call to Proxy.openStream.
 // See server.Call for documentation.
-type Proxy_dial struct {
+type Proxy_openStream struct {
 	*server.Call
 }
 
 // Args returns the call's arguments.
-func (c Proxy_dial) Args() Proxy_dial_Params {
-	return Proxy_dial_Params(c.Call.Args())
+func (c Proxy_openStream) Args() Proxy_openStream_Params {
+	return Proxy_openStream_Params(c.Call.Args())
 }
 
 // AllocResults allocates the results struct.
-func (c Proxy_dial) AllocResults() (Proxy_dial_Results, error) {
+func (c Proxy_openStream) AllocResults() (Proxy_openStream_Results, error) {
 	r, err := c.Call.AllocResults(capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Proxy_dial_Results(r), err
+	return Proxy_openStream_Results(r), err
 }
 
 // Proxy_List is a list of Proxy.
@@ -590,63 +590,63 @@ func (f Proxy_ByteStream_end_Results_Future) Struct() (Proxy_ByteStream_end_Resu
 	return Proxy_ByteStream_end_Results(p.Struct()), err
 }
 
-type Proxy_dial_Params capnp.Struct
+type Proxy_openStream_Params capnp.Struct
 
-// Proxy_dial_Params_TypeID is the unique identifier for the type Proxy_dial_Params.
-const Proxy_dial_Params_TypeID = 0xb73943930ce09927
+// Proxy_openStream_Params_TypeID is the unique identifier for the type Proxy_openStream_Params.
+const Proxy_openStream_Params_TypeID = 0xb73943930ce09927
 
-func NewProxy_dial_Params(s *capnp.Segment) (Proxy_dial_Params, error) {
+func NewProxy_openStream_Params(s *capnp.Segment) (Proxy_openStream_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Proxy_dial_Params(st), err
+	return Proxy_openStream_Params(st), err
 }
 
-func NewRootProxy_dial_Params(s *capnp.Segment) (Proxy_dial_Params, error) {
+func NewRootProxy_openStream_Params(s *capnp.Segment) (Proxy_openStream_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Proxy_dial_Params(st), err
+	return Proxy_openStream_Params(st), err
 }
 
-func ReadRootProxy_dial_Params(msg *capnp.Message) (Proxy_dial_Params, error) {
+func ReadRootProxy_openStream_Params(msg *capnp.Message) (Proxy_openStream_Params, error) {
 	root, err := msg.Root()
-	return Proxy_dial_Params(root.Struct()), err
+	return Proxy_openStream_Params(root.Struct()), err
 }
 
-func (s Proxy_dial_Params) String() string {
+func (s Proxy_openStream_Params) String() string {
 	str, _ := text.Marshal(0xb73943930ce09927, capnp.Struct(s))
 	return str
 }
 
-func (s Proxy_dial_Params) EncodeAsPtr(seg *capnp.Segment) capnp.Ptr {
+func (s Proxy_openStream_Params) EncodeAsPtr(seg *capnp.Segment) capnp.Ptr {
 	return capnp.Struct(s).EncodeAsPtr(seg)
 }
 
-func (Proxy_dial_Params) DecodeFromPtr(p capnp.Ptr) Proxy_dial_Params {
-	return Proxy_dial_Params(capnp.Struct{}.DecodeFromPtr(p))
+func (Proxy_openStream_Params) DecodeFromPtr(p capnp.Ptr) Proxy_openStream_Params {
+	return Proxy_openStream_Params(capnp.Struct{}.DecodeFromPtr(p))
 }
 
-func (s Proxy_dial_Params) ToPtr() capnp.Ptr {
+func (s Proxy_openStream_Params) ToPtr() capnp.Ptr {
 	return capnp.Struct(s).ToPtr()
 }
-func (s Proxy_dial_Params) IsValid() bool {
+func (s Proxy_openStream_Params) IsValid() bool {
 	return capnp.Struct(s).IsValid()
 }
 
-func (s Proxy_dial_Params) Message() *capnp.Message {
+func (s Proxy_openStream_Params) Message() *capnp.Message {
 	return capnp.Struct(s).Message()
 }
 
-func (s Proxy_dial_Params) Segment() *capnp.Segment {
+func (s Proxy_openStream_Params) Segment() *capnp.Segment {
 	return capnp.Struct(s).Segment()
 }
-func (s Proxy_dial_Params) Down() Proxy_ByteStream {
+func (s Proxy_openStream_Params) Down() Proxy_ByteStream {
 	p, _ := capnp.Struct(s).Ptr(0)
 	return Proxy_ByteStream(p.Interface().Client())
 }
 
-func (s Proxy_dial_Params) HasDown() bool {
+func (s Proxy_openStream_Params) HasDown() bool {
 	return capnp.Struct(s).HasPtr(0)
 }
 
-func (s Proxy_dial_Params) SetDown(v Proxy_ByteStream) error {
+func (s Proxy_openStream_Params) SetDown(v Proxy_ByteStream) error {
 	if !v.IsValid() {
 		return capnp.Struct(s).SetPtr(0, capnp.Ptr{})
 	}
@@ -655,83 +655,83 @@ func (s Proxy_dial_Params) SetDown(v Proxy_ByteStream) error {
 	return capnp.Struct(s).SetPtr(0, in.ToPtr())
 }
 
-// Proxy_dial_Params_List is a list of Proxy_dial_Params.
-type Proxy_dial_Params_List = capnp.StructList[Proxy_dial_Params]
+// Proxy_openStream_Params_List is a list of Proxy_openStream_Params.
+type Proxy_openStream_Params_List = capnp.StructList[Proxy_openStream_Params]
 
-// NewProxy_dial_Params creates a new list of Proxy_dial_Params.
-func NewProxy_dial_Params_List(s *capnp.Segment, sz int32) (Proxy_dial_Params_List, error) {
+// NewProxy_openStream_Params creates a new list of Proxy_openStream_Params.
+func NewProxy_openStream_Params_List(s *capnp.Segment, sz int32) (Proxy_openStream_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return capnp.StructList[Proxy_dial_Params](l), err
+	return capnp.StructList[Proxy_openStream_Params](l), err
 }
 
-// Proxy_dial_Params_Future is a wrapper for a Proxy_dial_Params promised by a client call.
-type Proxy_dial_Params_Future struct{ *capnp.Future }
+// Proxy_openStream_Params_Future is a wrapper for a Proxy_openStream_Params promised by a client call.
+type Proxy_openStream_Params_Future struct{ *capnp.Future }
 
-func (f Proxy_dial_Params_Future) Struct() (Proxy_dial_Params, error) {
+func (f Proxy_openStream_Params_Future) Struct() (Proxy_openStream_Params, error) {
 	p, err := f.Future.Ptr()
-	return Proxy_dial_Params(p.Struct()), err
+	return Proxy_openStream_Params(p.Struct()), err
 }
-func (p Proxy_dial_Params_Future) Down() Proxy_ByteStream {
+func (p Proxy_openStream_Params_Future) Down() Proxy_ByteStream {
 	return Proxy_ByteStream(p.Future.Field(0, nil).Client())
 }
 
-type Proxy_dial_Results capnp.Struct
+type Proxy_openStream_Results capnp.Struct
 
-// Proxy_dial_Results_TypeID is the unique identifier for the type Proxy_dial_Results.
-const Proxy_dial_Results_TypeID = 0xe9b64e98f306de02
+// Proxy_openStream_Results_TypeID is the unique identifier for the type Proxy_openStream_Results.
+const Proxy_openStream_Results_TypeID = 0xe9b64e98f306de02
 
-func NewProxy_dial_Results(s *capnp.Segment) (Proxy_dial_Results, error) {
+func NewProxy_openStream_Results(s *capnp.Segment) (Proxy_openStream_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Proxy_dial_Results(st), err
+	return Proxy_openStream_Results(st), err
 }
 
-func NewRootProxy_dial_Results(s *capnp.Segment) (Proxy_dial_Results, error) {
+func NewRootProxy_openStream_Results(s *capnp.Segment) (Proxy_openStream_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Proxy_dial_Results(st), err
+	return Proxy_openStream_Results(st), err
 }
 
-func ReadRootProxy_dial_Results(msg *capnp.Message) (Proxy_dial_Results, error) {
+func ReadRootProxy_openStream_Results(msg *capnp.Message) (Proxy_openStream_Results, error) {
 	root, err := msg.Root()
-	return Proxy_dial_Results(root.Struct()), err
+	return Proxy_openStream_Results(root.Struct()), err
 }
 
-func (s Proxy_dial_Results) String() string {
+func (s Proxy_openStream_Results) String() string {
 	str, _ := text.Marshal(0xe9b64e98f306de02, capnp.Struct(s))
 	return str
 }
 
-func (s Proxy_dial_Results) EncodeAsPtr(seg *capnp.Segment) capnp.Ptr {
+func (s Proxy_openStream_Results) EncodeAsPtr(seg *capnp.Segment) capnp.Ptr {
 	return capnp.Struct(s).EncodeAsPtr(seg)
 }
 
-func (Proxy_dial_Results) DecodeFromPtr(p capnp.Ptr) Proxy_dial_Results {
-	return Proxy_dial_Results(capnp.Struct{}.DecodeFromPtr(p))
+func (Proxy_openStream_Results) DecodeFromPtr(p capnp.Ptr) Proxy_openStream_Results {
+	return Proxy_openStream_Results(capnp.Struct{}.DecodeFromPtr(p))
 }
 
-func (s Proxy_dial_Results) ToPtr() capnp.Ptr {
+func (s Proxy_openStream_Results) ToPtr() capnp.Ptr {
 	return capnp.Struct(s).ToPtr()
 }
-func (s Proxy_dial_Results) IsValid() bool {
+func (s Proxy_openStream_Results) IsValid() bool {
 	return capnp.Struct(s).IsValid()
 }
 
-func (s Proxy_dial_Results) Message() *capnp.Message {
+func (s Proxy_openStream_Results) Message() *capnp.Message {
 	return capnp.Struct(s).Message()
 }
 
-func (s Proxy_dial_Results) Segment() *capnp.Segment {
+func (s Proxy_openStream_Results) Segment() *capnp.Segment {
 	return capnp.Struct(s).Segment()
 }
-func (s Proxy_dial_Results) Up() Proxy_ByteStream {
+func (s Proxy_openStream_Results) Up() Proxy_ByteStream {
 	p, _ := capnp.Struct(s).Ptr(0)
 	return Proxy_ByteStream(p.Interface().Client())
 }
 
-func (s Proxy_dial_Results) HasUp() bool {
+func (s Proxy_openStream_Results) HasUp() bool {
 	return capnp.Struct(s).HasPtr(0)
 }
 
-func (s Proxy_dial_Results) SetUp(v Proxy_ByteStream) error {
+func (s Proxy_openStream_Results) SetUp(v Proxy_ByteStream) error {
 	if !v.IsValid() {
 		return capnp.Struct(s).SetPtr(0, capnp.Ptr{})
 	}
@@ -740,56 +740,57 @@ func (s Proxy_dial_Results) SetUp(v Proxy_ByteStream) error {
 	return capnp.Struct(s).SetPtr(0, in.ToPtr())
 }
 
-// Proxy_dial_Results_List is a list of Proxy_dial_Results.
-type Proxy_dial_Results_List = capnp.StructList[Proxy_dial_Results]
+// Proxy_openStream_Results_List is a list of Proxy_openStream_Results.
+type Proxy_openStream_Results_List = capnp.StructList[Proxy_openStream_Results]
 
-// NewProxy_dial_Results creates a new list of Proxy_dial_Results.
-func NewProxy_dial_Results_List(s *capnp.Segment, sz int32) (Proxy_dial_Results_List, error) {
+// NewProxy_openStream_Results creates a new list of Proxy_openStream_Results.
+func NewProxy_openStream_Results_List(s *capnp.Segment, sz int32) (Proxy_openStream_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return capnp.StructList[Proxy_dial_Results](l), err
+	return capnp.StructList[Proxy_openStream_Results](l), err
 }
 
-// Proxy_dial_Results_Future is a wrapper for a Proxy_dial_Results promised by a client call.
-type Proxy_dial_Results_Future struct{ *capnp.Future }
+// Proxy_openStream_Results_Future is a wrapper for a Proxy_openStream_Results promised by a client call.
+type Proxy_openStream_Results_Future struct{ *capnp.Future }
 
-func (f Proxy_dial_Results_Future) Struct() (Proxy_dial_Results, error) {
+func (f Proxy_openStream_Results_Future) Struct() (Proxy_openStream_Results, error) {
 	p, err := f.Future.Ptr()
-	return Proxy_dial_Results(p.Struct()), err
+	return Proxy_openStream_Results(p.Struct()), err
 }
-func (p Proxy_dial_Results_Future) Up() Proxy_ByteStream {
+func (p Proxy_openStream_Results_Future) Up() Proxy_ByteStream {
 	return Proxy_ByteStream(p.Future.Field(0, nil).Client())
 }
 
-const schema_89a1f516c2d6455d = "x\xdat\x92Mh\xd4P\x10\xc7\xff3I\x9a\x0a\x0d" +
-	"\xcb\xeb\x13\xa5\x8a,hE\xe8a\xb5\xed\xc1\x0f\xc4]" +
-	"+\x8b\xe0\xa1&\xab\x88\x08\"\xa9\x1b\xb0\xd0\xcd.I" +
-	"\xca6\x07\x8f\"\xbd\xf9\x81`-(\xbd(\xf4\xe6A" +
-	"KO\x15AE\xbc\x0b\x1e\xd4^\xebE\xaa\x14A\x94" +
-	"H\xb2d\x13\xa4{\x9e\xff\xfb\xfdf\xde\xcc\x91\x03T" +
-	"QG\x8d\xc3\x1a\xd8:\xa9\xf5E\xe5\xea\x9f\xa9\x0f\xeb" +
-	"\x8f\x9f@\x0c(\xd1\xd5\xea\xc7\xd7\xbb\xb6\x96\xe6\x01\x92" +
-	"7\xf9\x9e\xbc\xc5\xbb\x01y\x97\xcf\xcaU\xd6\x81hs" +
-	"\xed\xd8\xa9w_\x9f=\x85\xd8G\x80\xaa\x03\xe3K<" +
-	"AP\xa3;\xd5\xf3\xdfo,./w*\x1a\xc5\xa5" +
-	"y\xae\x11H>\xe02(:\xb4\xb0>p\xff\xcc\xf1" +
-	"\x15\x88\xc14 _\xf0\x0f\x90\\M\xea\x7f\x87.N" +
-	"^Z\xf9\xfc6\x87\xfe\xc4\xe7b4\x7f\xe9\xfb\xf9p" +
-	"\xf2\xe5F\xfe\xe5\x1b\xfe\x0d\x92\xef\xe3\x97kG\xf7." +
-	"VL\xe7\x97\x18T\xb2a@r\x83\xbf\xc9\xad\xb8k" +
-	"\xb9\xc9\xb7\xe5iE\xc7\xe5\xa8\xe55\xe7\xc2\xd2u\x9b" +
-	"Zn\xeb\x84\xe95\xe7(\xb4T\xca\x10t%\x9a\x08" +
-	"\x03\xe7B\xe09P\xec\x86\xa5*\x1a\xd0m\x9d\xd2N" +
-	"\x84\x18\x01\x0bM/\xd4\xa7\xed\x99\x0a\x99D]\xf2\x8e" +
-	"\x94\x1c\x96R\x92\xdd(9n}\xd8\xb4=\xbb\xe1#" +
-	"\x0dn\x9bk{\xd3\x81\xd3I\x92o\xa9\x8a\x0a\xa8\x04" +
-	"\x08c\x0c\xb0\xfa\x15\xb2v2\x15\xa7\xc2\xc0\xf1\xc9\x00" +
-	"\x93\x81L\xcc\x190\xeej\xd8,&\xbe<d$\x83" +
-	"\x14\xea\xcd\xb6K\"\x1d\x1cD\"\xc7R{\x0eQs" +
-	"\xfc\xd9\x99\xc0\x07zzk\xe5N$/\xde\x93\x89\x95" +
-	"\xd9VO-\xff\xaf-\xc4^\x93\xc8\xeaO\xf6\x90\xde" +
-	"\x18\xb9\xcf_\xb5\xc7\x1f][\x10\xa3c`qP'" +
-	"\xea^&\xa5w$\x86\xf6\x83\x85\xa1\x17\x93?\xad\x90" +
-	"\xee\xb8\xf5dU\xff\x02\x00\x00\xff\xffM\x01\xe3R"
+const schema_89a1f516c2d6455d = "x\xda\x84\x92=h\x14Q\x10\xc7\xff3o/\x9b@" +
+	"\x8e\xe3eE\x89\"\x81\xe0\x07\xa48MR\xf8\x81\x98" +
+	"#r\x08\x82q\xf7\x14\x91\x80\xc8\xc6{\xa0\xe0\xee-" +
+	"\xbb\x1b.[X\x8aX\x08~4\x9e\x01\xc5B\x85t" +
+	"6\x06\x0b\x89Zh!\x96\xda\xa9\xb1\xd4FD\x82\x8d" +
+	"ae/\xbc\xdbS\x0c\xa9\xdf\x7f~\xbfy3\xb3w" +
+	"\x17U\x8c\xd1\xe2\x9e\x02\xd89T\xe8I'\xaa\xbfg" +
+	"\xde.\xdf\xbb\x0f\xd9/\xd2\xb3\xd5\x0f\xaf6\xaf<\xb8" +
+	"\x06\x90u\x99oYWx\x0b`\xdd\xe4\xa3\xd6s6" +
+	"\x81\xf4\xc7\xd2\xfe\xc3o>?~\x04\xb9\x9d\x00\xc3\x04" +
+	"\xc6\x1f\xf2$\xc1HoTO|\xbf0\xbf\xb0\xb0\xf6" +
+	"R\xa0\xec\xe9:\xd7\x08d\xb5x\x02\x94\xeen-\xf7" +
+	"\xdf>r`\x11r\xa0\x13x\xc6\xc3Y\xe0e;\xb0" +
+	":xj\xea\xf4\xe2\xc7\xd7]\xec/|,c\xf3\xa7" +
+	"\x9e\x9fw\xa6\x9e~\xed.}\xc7#Y\xe9\xfb\xact" +
+	"i\xdf\xb6\xf9\x8a\xad~\xc9\x01\x91\x7f\x07d\xad\xf07" +
+	"\x8b\x84\x09X\xab|\xd5:.L\x9cI\x83\xb01\x97" +
+	"\x94\xcf\xbb\x14\xf8\xc1A;l\xccQ\xe2\x18\x94#h" +
+	":\x9dLbu2\x0e\x15\x84\xeb9\x86(\x00\x9d\xe6" +
+	"I\xb7\"\xe54X\xf6\x99i#P\xbe\x0eW\xc8&" +
+	"\xea\x18\xfa\xb4!)k\xa2\xeb\x95\x95_\xdfa\xbb\xa1" +
+	"\xebE\xd0\xc1\xff\xe6\x9a\xe1\xc5X\xad%)r\x0ca" +
+	"\x00\x06\x01\xb28\x068\xbd\x82\x9cMLC3I\xac" +
+	"\"*\x82\xa9\x88\\,r\xa0\xee\xce\xf52\x94\xe9z" +
+	"\x7f\xa1FrT\xa9\xdeh\xfa$\xf5\x18@$\xbb\x88" +
+	"\xc6\xba_\xa9\xa9h\xf6R\x1c\x01\x1b\xd8k**e" +
+	"\xc1n\xfd\xd6\\/f\x83u\xe5\xfc\xaf\xbc\x94\x11m" +
+	"\"\xa7\xb7\xbd\x1b}y\xe4?y\xd1\x1c\xbf{\xae%" +
+	"G\xc7\xc0r\xa7I\xd4\xb9W\xd2\xc7%\x07\x87\xc1\xb2" +
+	"h\x0e\xb5\xe7[!S\xf9\xf5\xf6\xda\xfe\x04\x00\x00\xff" +
+	"\xff\x96\x94\xe9\xcd"
 
 func RegisterSchema(reg *schemas.Registry) {
 	reg.Register(&schemas.Schema{

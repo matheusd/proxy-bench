@@ -5,7 +5,7 @@ $Go.package("capnpnet");
 $Go.import("proxy-bench/capnpnet");
 
 interface Proxy {
-  dial @0 (down :ByteStream) -> (up :ByteStream);
+  openStream @0 (down :ByteStream) -> (up :ByteStream);
 
   interface ByteStream {
     write @0 (bytes: Data) -> stream;
