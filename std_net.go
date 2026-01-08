@@ -10,11 +10,11 @@ import (
 	"os"
 )
 
-type stdNetServerSession struct {
+type stdServerSession struct {
 	listener net.Listener
 }
 
-func (s *stdNetServerSession) AcceptStream() (Stream, error) {
+func (s *stdServerSession) AcceptStream() (Stream, error) {
 	conn, err := s.listener.Accept()
 	if err != nil {
 		return nil, err
@@ -22,18 +22,18 @@ func (s *stdNetServerSession) AcceptStream() (Stream, error) {
 
 	log.Printf("Accepted stream: %s->%s", conn.RemoteAddr(), conn.LocalAddr())
 
-	return &stdNetStream{
+	return &stdStream{
 		ReadWriteCloser: conn,
 	}, nil
 }
 
-type stdNetClientSession struct {
+type stdClientSession struct {
 	network   string
 	address   string
 	tlsConfig *tls.Config
 }
 
-func (s *stdNetClientSession) OpenStream() (Stream, error) {
+func (s *stdClientSession) OpenStream() (Stream, error) {
 	var conn net.Conn
 	var err error
 
@@ -49,16 +49,16 @@ func (s *stdNetClientSession) OpenStream() (Stream, error) {
 
 	log.Printf("Opened stream: %s->%s", conn.LocalAddr(), conn.RemoteAddr())
 
-	return &stdNetStream{
+	return &stdStream{
 		ReadWriteCloser: conn,
 	}, nil
 }
 
-type stdNetStream struct {
+type stdStream struct {
 	io.ReadWriteCloser
 }
 
-func (s *stdNetStream) CloseRead() error {
+func (s *stdStream) CloseRead() error {
 	if c, ok := s.ReadWriteCloser.(interface {
 		CloseRead() error
 	}); ok {
@@ -68,7 +68,7 @@ func (s *stdNetStream) CloseRead() error {
 	return nil
 }
 
-func (s *stdNetStream) CloseWrite() error {
+func (s *stdStream) CloseWrite() error {
 	if c, ok := s.ReadWriteCloser.(interface {
 		CloseWrite() error
 	}); ok {
@@ -160,14 +160,14 @@ func init() {
 
 		log.Printf("Listened on %s", args.Listen)
 
-		return &stdNetServerSession{
+		return &stdServerSession{
 			listener: listener,
 		}, nil
 	}
 
 	netDial := func(args Args) (ClientSession, error) {
 		network, tlsEnabled, addr := splitAddress(args.Connect)
-		sess := &stdNetClientSession{
+		sess := &stdClientSession{
 			network: network,
 			address: addr,
 		}
