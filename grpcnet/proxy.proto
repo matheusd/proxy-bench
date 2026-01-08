@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package grpcnet;
+
+option go_package = "./grpcnet";
+
+// Proxy
+service Proxy {
+  // Open bidi stream
+  rpc OpenStream (stream Packet) returns (stream Packet);
+}
+
+// Packet
+message Packet {
+  bytes data = 1;
+}

@@ -59,6 +59,7 @@ func handleStream(client netx.ClientSession, down netx.Stream) {
 	up, err := client.OpenStream()
 	if err != nil {
 		log.Printf("Failed to open upstream: %v", err)
+		return
 	}
 
 	defer up.Close()

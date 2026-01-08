@@ -10,7 +10,6 @@ import (
 	netx "proxy-bench/netx"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	capnp "capnproto.org/go/capnp/v3"
 	"capnproto.org/go/capnp/v3/flowcontrol"
@@ -144,13 +143,10 @@ func (s *ClientSession) OpenStream() (netx.Stream, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-
 	reader := newByteStreamReader()
 	downStream := Proxy_ByteStream_ServerToClient(reader)
 	downStream.SetFlowLimiter(flowcontrol.NewFixedLimiter(1024 * 1024 * 4))
-	future, release := proxy.Dial(ctx, func(p Proxy_dial_Params) error {
+	future, release := proxy.Dial(context.Background(), func(p Proxy_dial_Params) error {
 		return p.SetDown(downStream)
 	})
 
