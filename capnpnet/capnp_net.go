@@ -18,8 +18,9 @@ import (
 
 type ServerSession struct {
 	listener net.Listener
-	mu       sync.Mutex
 	incoming chan netx.Stream
+	closedCh chan struct{}
+	mu       sync.Mutex
 	rpcConn  *rpc.Conn
 }
 
@@ -57,12 +58,12 @@ func (s *ServerSession) AcceptStream() (netx.Stream, error) {
 		return nil, err
 	}
 
-	stream, ok := <-incoming
-	if !ok {
+	select {
+	case stream := <-incoming:
+		return stream, nil
+	case <-s.closedCh:
 		return nil, os.ErrClosed
 	}
-
-	return stream, nil
 }
 
 func (s *ServerSession) Close() error {
@@ -71,9 +72,12 @@ func (s *ServerSession) Close() error {
 
 	if s.rpcConn != nil {
 		s.rpcConn.Close()
+		s.listener.Close()
+		close(s.closedCh)
+		s.rpcConn = nil
+		s.listener = nil
 	}
 
-	s.listener.Close()
 	return nil
 }
 
@@ -91,7 +95,12 @@ func (s *ServerSession) OpenStream(ctx context.Context, call Proxy_openStream) e
 	}
 
 	down := call.Args().Down().AddRef()
-	s.incoming <- newCapnpStream(up, down)
+	select {
+	case s.incoming <- newCapnpStream(up, down):
+	case <-s.closedCh:
+		down.Release()
+	}
+
 	return nil
 }
 
@@ -207,7 +216,10 @@ func (s *capnpStream) Write(b []byte) (n int, err error) {
 }
 
 func (s *capnpStream) Close() error {
-	return errors.Join(s.CloseWrite(), s.CloseRead())
+	err := errors.Join(s.CloseWrite(), s.CloseRead())
+
+	s.writer.Release()
+	return err
 }
 
 func (s *capnpStream) CloseRead() error {
