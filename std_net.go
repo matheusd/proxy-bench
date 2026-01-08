@@ -10,11 +10,11 @@ import (
 	"os"
 )
 
-type netCommonServerSession struct {
+type stdNetServerSession struct {
 	listener net.Listener
 }
 
-func (s *netCommonServerSession) AcceptStream() (Stream, error) {
+func (s *stdNetServerSession) AcceptStream() (Stream, error) {
 	conn, err := s.listener.Accept()
 	if err != nil {
 		return nil, err
@@ -22,18 +22,18 @@ func (s *netCommonServerSession) AcceptStream() (Stream, error) {
 
 	log.Printf("Accepted stream: %s->%s", conn.RemoteAddr(), conn.LocalAddr())
 
-	return &netCommonStream{
+	return &stdNetStream{
 		ReadWriteCloser: conn,
 	}, nil
 }
 
-type netCommonClientSession struct {
+type stdNetClientSession struct {
 	network   string
 	address   string
 	tlsConfig *tls.Config
 }
 
-func (s *netCommonClientSession) OpenStream() (Stream, error) {
+func (s *stdNetClientSession) OpenStream() (Stream, error) {
 	var conn net.Conn
 	var err error
 
@@ -49,16 +49,16 @@ func (s *netCommonClientSession) OpenStream() (Stream, error) {
 
 	log.Printf("Opened stream: %s->%s", conn.LocalAddr(), conn.RemoteAddr())
 
-	return &netCommonStream{
+	return &stdNetStream{
 		ReadWriteCloser: conn,
 	}, nil
 }
 
-type netCommonStream struct {
+type stdNetStream struct {
 	io.ReadWriteCloser
 }
 
-func (s *netCommonStream) CloseRead() error {
+func (s *stdNetStream) CloseRead() error {
 	if c, ok := s.ReadWriteCloser.(interface {
 		CloseRead() error
 	}); ok {
@@ -68,7 +68,7 @@ func (s *netCommonStream) CloseRead() error {
 	return nil
 }
 
-func (s *netCommonStream) CloseWrite() error {
+func (s *stdNetStream) CloseWrite() error {
 	if c, ok := s.ReadWriteCloser.(interface {
 		CloseWrite() error
 	}); ok {
@@ -160,14 +160,14 @@ func init() {
 
 		log.Printf("Listened on %s", args.Listen)
 
-		return &netCommonServerSession{
+		return &stdNetServerSession{
 			listener: listener,
 		}, nil
 	}
 
 	netDial := func(args Args) (ClientSession, error) {
 		network, tlsEnabled, addr := splitAddress(args.Connect)
-		sess := &netCommonClientSession{
+		sess := &stdNetClientSession{
 			network: network,
 			address: addr,
 		}
