@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"proxy-bench/netx"
 	"sort"
 	"strings"
@@ -24,6 +26,7 @@ func main() {
 	certPath := flag.String("cert", "./server-cert.pem", "Cert path for listening")
 	keyPath := flag.String("key", "./server-key.pem", "Key path for listening")
 	caPath := flag.String("ca", "./ca.pem", "CA cert path for connecting")
+	pprof := flag.Bool("pprof", false, "Enable pprof profiling")
 	flag.Parse()
 
 	fmt.Println("Listen:", *listen)
@@ -31,6 +34,7 @@ func main() {
 	fmt.Println("Cert:", *certPath)
 	fmt.Println("Key:", *keyPath)
 	fmt.Println("CA:", *caPath)
+	fmt.Println("Pprof:", *pprof)
 
 	args := Args{
 		Listen:   *listen,
@@ -38,6 +42,15 @@ func main() {
 		CertPath: *certPath,
 		KeyPath:  *keyPath,
 		CAPath:   *caPath,
+	}
+
+	if *pprof {
+		go func() {
+			log.Printf("Starting pprof server on :6060")
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				log.Printf("pprof server error: %v", err)
+			}
+		}()
 	}
 
 	server := newServerSession(args)
