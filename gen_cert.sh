@@ -3,14 +3,17 @@
 # 生成正确的 PKI 证书结构（如果不存在）
 if [ ! -f "ca.pem" ] || [ ! -f "ca-key.pem" ] || [ ! -f "server-cert.pem" ] || [ ! -f "server-key.pem" ]; then
     echo "生成 PKI 证书结构..."
+    START_DATE=$(date -u -d "-1 day" +"%Y%m%d%H%M%SZ")
+    END_DATE=$(date -u -d "+180 days" +"%Y%m%d%H%M%SZ")
     
     # 1. 生成 CA 私钥
     echo "  生成 CA 私钥..."
     openssl genrsa -out ca-key.pem 2048
+
     
     # 2. 生成 CA 证书
     echo "  生成 CA 证书..."
-    openssl req -new -x509 -days 365 -key ca-key.pem -out ca.pem \
+    openssl req -new -x509 -not_before "$START_DATE" -not_after "$END_DATE" -key ca-key.pem -out ca.pem \
         -subj "/C=CN/ST=Beijing/L=Beijing/O=Test-CA/CN=Test-CA" \
         -addext "basicConstraints=critical,CA:TRUE" \
         -addext "keyUsage=critical,keyCertSign,cRLSign" \
@@ -42,6 +45,7 @@ DNS.1 = localhost
 IP.1 = 127.0.0.1
 EOF
     fi
+
     
     # 4. 生成服务器私钥
     echo "  生成服务器私钥..."
@@ -53,8 +57,8 @@ EOF
     
     # 6. 使用 CA 签发服务器证书
     echo "  使用 CA 签发服务器证书..."
-    openssl x509 -req -in server.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial \
-        -out server-cert.pem -days 365 -extensions v3_req -extfile server.conf
+    openssl x509 -req -not_before "$START_DATE" -not_after "$END_DATE" -in server.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial \
+        -out server-cert.pem -extensions v3_req -extfile server.conf
     
     # 7. 清理临时文件
     rm -f server.csr
