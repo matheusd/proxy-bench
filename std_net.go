@@ -8,13 +8,14 @@ import (
 	"log"
 	"net"
 	"os"
+	"proxy-bench/netx"
 )
 
 type stdServerSession struct {
 	listener net.Listener
 }
 
-func (s *stdServerSession) AcceptStream() (Stream, error) {
+func (s *stdServerSession) AcceptStream() (netx.Stream, error) {
 	conn, err := s.listener.Accept()
 	if err != nil {
 		return nil, err
@@ -27,13 +28,17 @@ func (s *stdServerSession) AcceptStream() (Stream, error) {
 	}, nil
 }
 
+func (s *stdServerSession) Close() error {
+	return s.listener.Close()
+}
+
 type stdClientSession struct {
 	network   string
 	address   string
 	tlsConfig *tls.Config
 }
 
-func (s *stdClientSession) OpenStream() (Stream, error) {
+func (s *stdClientSession) OpenStream() (netx.Stream, error) {
 	var conn net.Conn
 	var err error
 
@@ -52,6 +57,10 @@ func (s *stdClientSession) OpenStream() (Stream, error) {
 	return &stdStream{
 		ReadWriteCloser: conn,
 	}, nil
+}
+
+func (s *stdClientSession) Close() error {
+	return nil
 }
 
 type stdStream struct {
@@ -138,7 +147,7 @@ func getServerTLSConfig(args Args) (*tls.Config, error) {
 }
 
 func init() {
-	netListen := func(args Args) (ServerSession, error) {
+	netListen := func(args Args) (netx.ServerSession, error) {
 		var listener net.Listener
 		var err error
 
@@ -165,7 +174,7 @@ func init() {
 		}, nil
 	}
 
-	netDial := func(args Args) (ClientSession, error) {
+	netDial := func(args Args) (netx.ClientSession, error) {
 		network, tlsEnabled, addr := splitAddress(args.Connect)
 		sess := &stdClientSession{
 			network: network,

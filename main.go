@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"proxy-bench/netx"
 	"sort"
 	"strings"
 )
@@ -15,22 +16,6 @@ type Args struct {
 	CertPath string
 	KeyPath  string
 	CAPath   string
-}
-
-// Stream a bidi stream
-type Stream interface {
-	io.ReadWriteCloser
-	CloseRead() error
-	CloseWrite() error
-}
-
-// ServerSession a session
-type ServerSession interface {
-	AcceptStream() (Stream, error)
-}
-
-type ClientSession interface {
-	OpenStream() (Stream, error)
 }
 
 func main() {
@@ -68,7 +53,7 @@ func main() {
 	}
 }
 
-func handleStream(client ClientSession, down Stream) {
+func handleStream(client netx.ClientSession, down netx.Stream) {
 	defer down.Close()
 
 	up, err := client.OpenStream()
@@ -85,7 +70,7 @@ func handleStream(client ClientSession, down Stream) {
 	copyStream(up, down, "upstream", "downstream")
 }
 
-func copyStream(src, dst Stream, srcName, dstName string) (written int64, copyErr error) {
+func copyStream(src, dst netx.Stream, srcName, dstName string) (written int64, copyErr error) {
 	written, copyErr = io.Copy(dst, src)
 	if copyErr != nil {
 		log.Printf("Failed to copy %s -> %s(written=%d): %v", srcName, dstName, written, copyErr)
@@ -110,11 +95,11 @@ func copyStream(src, dst Stream, srcName, dstName string) (written int64, copyEr
 	return
 }
 
-type ServerSessionCreator func(args Args) (ServerSession, error)
+type ServerSessionCreator func(args Args) (netx.ServerSession, error)
 
 var serverSessionCreators map[string]ServerSessionCreator = make(map[string]ServerSessionCreator)
 
-func newServerSession(args Args) ServerSession {
+func newServerSession(args Args) netx.ServerSession {
 	network, _, _ := splitAddress(args.Listen)
 	creator, ok := serverSessionCreators[network]
 	if !ok || creator == nil {
@@ -139,11 +124,11 @@ func getAvailableListenSchemes() string {
 	return strings.Join(schemes, ", ")
 }
 
-type ClientSessionCreator func(args Args) (ClientSession, error)
+type ClientSessionCreator func(args Args) (netx.ClientSession, error)
 
 var clientSessionCreators map[string]ClientSessionCreator = make(map[string]ClientSessionCreator)
 
-func newClientSession(args Args) ClientSession {
+func newClientSession(args Args) netx.ClientSession {
 	network, _, _ := splitAddress(args.Connect)
 	creator, ok := clientSessionCreators[network]
 	if !ok || creator == nil {
