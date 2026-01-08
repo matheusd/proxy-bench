@@ -1,0 +1,30 @@
+# benchmark proxy transport
+
+## Usage
+
+### generate certificates(optional)
+
+```bash
+chmod a+x ./gen_cert.sh
+./gen_cert.sh
+
+```
+
+### server side
+
+```bash
+iperf3 -s -p 3443
+./proxy-bench -listen "capnp+tls://127.0.0.1:2443" -connect "tcp://127.0.0.1:3443" -cert server-cert.pem -key server-key.pem
+```
+
+### client side
+
+```bash
+./proxy-bench -listen "tcp://127.0.0.1:1443" -connect "capnp+tls://127.0.0.1:2443" -ca ca.pem
+```
+
+### benchmark
+
+```bash
+iperf3 -c 127.0.0.1 -p 1443 -t 60
+```

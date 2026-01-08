@@ -95,6 +95,7 @@ func (s *ServerSession) OpenStream(ctx context.Context, call Proxy_openStream) e
 	}
 
 	down := call.Args().Down().AddRef()
+	down.SetFlowLimiter(flowcontrol.NewFixedLimiter(1024 * 1024 * 4))
 	select {
 	case s.incoming <- newCapnpStream(up, down):
 	case <-s.closedCh:
@@ -154,7 +155,6 @@ func (s *ClientSession) OpenStream() (netx.Stream, error) {
 
 	reader := newByteStreamReader()
 	downStream := Proxy_ByteStream_ServerToClient(reader)
-	downStream.SetFlowLimiter(flowcontrol.NewFixedLimiter(1024 * 1024 * 4))
 	future, release := proxy.OpenStream(context.Background(), func(p Proxy_openStream_Params) error {
 		return p.SetDown(downStream)
 	})
@@ -167,6 +167,7 @@ func (s *ClientSession) OpenStream() (netx.Stream, error) {
 
 	reader.release = release
 	writer := res.Up()
+	writer.SetFlowLimiter(flowcontrol.NewFixedLimiter(1024 * 1024 * 4))
 	return newCapnpStream(reader, writer), nil
 }
 

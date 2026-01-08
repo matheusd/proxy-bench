@@ -21,9 +21,9 @@ type Args struct {
 func main() {
 	listen := flag.String("listen", "tcp://127.0.0.1:1443", fmt.Sprintf("Listen address, available schemes: %s, add tls to enable TLS, e.g. tcp+tls", getAvailableListenSchemes()))
 	connect := flag.String("connect", "tcp://127.0.0.1:", fmt.Sprintf("Connect address, available schemes: %s, add tls to enable TLS, e.g. tcp+tls", getAvailableConnectSchemes()))
-	certPath := flag.String("cert", "./server.crt", "Cert path for listening")
-	keyPath := flag.String("key", "./server.key", "Key path for listening")
-	caPath := flag.String("ca", "./ca.crt", "CA cert path for connecting")
+	certPath := flag.String("cert", "./server-cert.pem", "Cert path for listening")
+	keyPath := flag.String("key", "./server-key.pem", "Key path for listening")
+	caPath := flag.String("ca", "./ca.pem", "CA cert path for connecting")
 	flag.Parse()
 
 	fmt.Println("Listen:", *listen)
@@ -49,6 +49,7 @@ func main() {
 			log.Fatalf("Failed to accept downstream: %v", err)
 		}
 
+		log.Printf("Accepted new stream from client")
 		go handleStream(client, down)
 	}
 }
@@ -61,6 +62,8 @@ func handleStream(client netx.ClientSession, down netx.Stream) {
 		log.Printf("Failed to open upstream: %v", err)
 		return
 	}
+
+	log.Printf("Success to open new stream to server")
 
 	defer up.Close()
 
