@@ -13,16 +13,16 @@ func init() {
 		var listener net.Listener
 		var err error
 
-		network, tlsEnabled, addr := splitAddress(args.Listen)
+		_, tlsEnabled, addr := splitAddress(args.Listen)
 		if tlsEnabled {
 			tlsConfig, err1 := getServerTLSConfig(args)
 			if err1 != nil {
 				return nil, err1
 			}
 
-			listener, err = tls.Listen(network, addr, tlsConfig)
+			listener, err = tls.Listen("tcp", addr, tlsConfig)
 		} else {
-			listener, err = net.Listen(network, addr)
+			listener, err = net.Listen("tcp", addr)
 		}
 
 		if err != nil {
@@ -35,7 +35,7 @@ func init() {
 	}
 
 	clientSessionCreators["capnp"] = func(args Args) (netx.ClientSession, error) {
-		network, tlsEnabled, addr := splitAddress(args.Connect)
+		_, tlsEnabled, addr := splitAddress(args.Connect)
 		var tlsConfig *tls.Config
 		var err error
 
@@ -46,6 +46,6 @@ func init() {
 			}
 		}
 
-		return capnpnet.NewClientSession(network, addr, tlsConfig), nil
+		return capnpnet.NewClientSession("tcp", addr, tlsConfig), nil
 	}
 }

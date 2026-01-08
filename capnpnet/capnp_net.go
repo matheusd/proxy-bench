@@ -3,6 +3,7 @@ package capnpnet
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"os"
@@ -16,21 +17,21 @@ import (
 	"capnproto.org/go/capnp/v3/rpc"
 )
 
-type CapnpServerSession struct {
+type ServerSession struct {
 	listener net.Listener
 	mu       sync.Mutex
 	incoming chan netx.Stream
 	rpcConn  *rpc.Conn
 }
 
-func NewServerSession(listener net.Listener) *CapnpServerSession {
-	return &CapnpServerSession{
+func NewServerSession(listener net.Listener) *ServerSession {
+	return &ServerSession{
 		listener: listener,
 		incoming: make(chan netx.Stream),
 	}
 }
 
-func (s *CapnpServerSession) bootstrap() (incoming <-chan netx.Stream, err error) {
+func (s *ServerSession) bootstrap() (incoming <-chan netx.Stream, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.rpcConn != nil {
@@ -51,7 +52,7 @@ func (s *CapnpServerSession) bootstrap() (incoming <-chan netx.Stream, err error
 	return s.incoming, nil
 }
 
-func (s *CapnpServerSession) AcceptStream() (netx.Stream, error) {
+func (s *ServerSession) AcceptStream() (netx.Stream, error) {
 	incoming, err := s.bootstrap()
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (s *CapnpServerSession) AcceptStream() (netx.Stream, error) {
 	return stream, nil
 }
 
-func (s *CapnpServerSession) Close() error {
+func (s *ServerSession) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -78,7 +79,7 @@ func (s *CapnpServerSession) Close() error {
 }
 
 // Dial called by client
-func (s *CapnpServerSession) Dial(ctx context.Context, call Proxy_dial) error {
+func (s *ServerSession) Dial(ctx context.Context, call Proxy_dial) error {
 	res, err := call.AllocResults()
 	if err != nil {
 		return err
@@ -95,7 +96,7 @@ func (s *CapnpServerSession) Dial(ctx context.Context, call Proxy_dial) error {
 	return nil
 }
 
-type CapnpClientSession struct {
+type ClientSession struct {
 	network     string
 	address     string
 	tlsConfig   *tls.Config
@@ -104,15 +105,15 @@ type CapnpClientSession struct {
 	proxyClient Proxy
 }
 
-func NewClientSession(network, address string, tlsConfig *tls.Config) *CapnpClientSession {
-	return &CapnpClientSession{
+func NewClientSession(network, address string, tlsConfig *tls.Config) *ClientSession {
+	return &ClientSession{
 		network:   network,
 		address:   address,
 		tlsConfig: tlsConfig,
 	}
 }
 
-func (s *CapnpClientSession) bootstrap() (Proxy, error) {
+func (s *ClientSession) bootstrap() (Proxy, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -137,7 +138,7 @@ func (s *CapnpClientSession) bootstrap() (Proxy, error) {
 	return s.proxyClient, nil
 }
 
-func (s *CapnpClientSession) OpenStream() (netx.Stream, error) {
+func (s *ClientSession) OpenStream() (netx.Stream, error) {
 	proxy, err := s.bootstrap()
 	if err != nil {
 		return nil, err
@@ -164,7 +165,7 @@ func (s *CapnpClientSession) OpenStream() (netx.Stream, error) {
 	return newCapnpStream(reader, writer), nil
 }
 
-func (s *CapnpClientSession) Close() error {
+func (s *ClientSession) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.rpcConn == nil {
@@ -210,13 +211,11 @@ func (s *capnpStream) Write(b []byte) (n int, err error) {
 }
 
 func (s *capnpStream) Close() error {
-	s.CloseWrite()
-	return nil
+	return errors.Join(s.CloseWrite(), s.CloseRead())
 }
 
 func (s *capnpStream) CloseRead() error {
-	// do nothing
-	return nil
+	return s.reader.Close()
 }
 
 func (s *capnpStream) CloseWrite() error {
@@ -265,8 +264,12 @@ func (s *byteStreamReader) Read(p []byte) (n int, err error) {
 	return s.reader.Read(p)
 }
 
+// Close is CloseRead
 func (s *byteStreamReader) Close() error {
-	s.release()
+	s.writer.Close()
+	if s.release != nil {
+		s.release()
+	}
 	return nil
 }
 
