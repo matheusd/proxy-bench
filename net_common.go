@@ -1,9 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 )
 
 type netCommonServerSession struct {
@@ -24,12 +28,21 @@ func (s *netCommonServerSession) AcceptStream() (Stream, error) {
 }
 
 type netCommonClientSession struct {
-	network string
-	address string
+	network   string
+	address   string
+	tlsConfig *tls.Config
 }
 
 func (s *netCommonClientSession) OpenStream() (Stream, error) {
-	conn, err := net.Dial(s.network, s.address)
+	var conn net.Conn
+	var err error
+
+	if s.tlsConfig == nil {
+		conn, err = net.Dial(s.network, s.address)
+	} else {
+		conn, err = tls.Dial(s.network, s.address, s.tlsConfig)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -65,10 +78,82 @@ func (s *netCommonStream) CloseWrite() error {
 	return nil
 }
 
+func getClientTLSConfig(args Args) (*tls.Config, error) {
+	tlsConfig := &tls.Config{
+		NextProtos: []string{"h2"},
+	}
+
+	if args.CAPath != "" {
+		caCert, err := os.ReadFile(args.CAPath)
+		if err != nil {
+			return nil, err
+		}
+
+		caPool := x509.NewCertPool()
+		if !caPool.AppendCertsFromPEM(caCert) {
+			return nil, fmt.Errorf("failed to AppendCertsFromPEM: %s", args.CAPath)
+		}
+
+		tlsConfig.RootCAs = caPool
+	}
+
+	keylog := os.Getenv("SSLKEYLOGFILE")
+	if keylog != "" {
+		file, err := os.OpenFile(keylog, os.O_CREATE|os.O_RDWR, 0664)
+		if err != nil {
+			log.Printf("Failed to open SSLKEYLOGFILE(%s): %v", keylog, err)
+		} else {
+			tlsConfig.KeyLogWriter = file
+			log.Printf("Success to set TLS KeyLogWriter to %s", keylog)
+		}
+	}
+
+	return tlsConfig, nil
+}
+
+func getServerTLSConfig(args Args) (*tls.Config, error) {
+	cert, err := tls.LoadX509KeyPair(args.CertPath, args.KeyPath)
+	if err != nil {
+		log.Fatalf("Failed to load certificate: %v", err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.NoClientCert,
+		NextProtos:   []string{"h2"},
+	}
+
+	keylog := os.Getenv("SSLKEYLOGFILE")
+	if keylog != "" {
+		file, err := os.OpenFile(keylog, os.O_CREATE|os.O_RDWR, 0664)
+		if err != nil {
+			log.Printf("Failed to open SSLKEYLOGFILE(%s): %v", keylog, err)
+		} else {
+			tlsConfig.KeyLogWriter = file
+			log.Printf("Success to set TLS KeyLogWriter to %s", keylog)
+		}
+	}
+
+	return tlsConfig, nil
+}
+
 func init() {
 	netListen := func(args Args) (ServerSession, error) {
-		network, addr := splitSchemeAddr(args.Listen)
-		listener, err := net.Listen(network, addr)
+		var listener net.Listener
+		var err error
+
+		network, tlsEnabled, addr := splitAddress(args.Listen)
+		if tlsEnabled {
+			tlsConfig, err1 := getServerTLSConfig(args)
+			if err1 != nil {
+				return nil, err1
+			}
+
+			listener, err = tls.Listen(network, addr, tlsConfig)
+		} else {
+			listener, err = net.Listen(network, addr)
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -81,11 +166,21 @@ func init() {
 	}
 
 	netDial := func(args Args) (ClientSession, error) {
-		network, addr := splitSchemeAddr(args.Connect)
-		return &netCommonClientSession{
+		network, tlsEnabled, addr := splitAddress(args.Connect)
+		sess := &netCommonClientSession{
 			network: network,
 			address: addr,
-		}, nil
+		}
+
+		if tlsEnabled {
+			tlsConfig, err := getClientTLSConfig(args)
+			if err != nil {
+				return nil, err
+			}
+			sess.tlsConfig = tlsConfig
+		}
+
+		return sess, nil
 	}
 
 	for _, scheme := range []string{"tcp", "tcp4", "tcp6", "unix", "unixpacket"} {

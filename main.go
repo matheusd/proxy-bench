@@ -34,8 +34,8 @@ type ClientSession interface {
 }
 
 func main() {
-	listen := flag.String("listen", "tcp://127.0.0.1:1443", fmt.Sprintf("Listen address, available schemes: %s", getAvailableListenSchemes()))
-	connect := flag.String("connect", "tcp://127.0.0.1:", fmt.Sprintf("Connect address, available schemes: %s", getAvailableConnectSchemes()))
+	listen := flag.String("listen", "tcp://127.0.0.1:1443", fmt.Sprintf("Listen address, available schemes: %s, add tls to enable TLS, e.g. tcp+tls", getAvailableListenSchemes()))
+	connect := flag.String("connect", "tcp://127.0.0.1:", fmt.Sprintf("Connect address, available schemes: %s, add tls to enable TLS, e.g. tcp+tls", getAvailableConnectSchemes()))
 	certPath := flag.String("cert", "./server.crt", "Cert path for listening")
 	keyPath := flag.String("key", "./server.key", "Key path for listening")
 	caPath := flag.String("ca", "./ca.crt", "CA cert path for connecting")
@@ -115,10 +115,10 @@ type ServerSessionCreator func(args Args) (ServerSession, error)
 var serverSessionCreators map[string]ServerSessionCreator = make(map[string]ServerSessionCreator)
 
 func newServerSession(args Args) ServerSession {
-	scheme, _ := splitSchemeAddr(args.Listen)
-	creator, ok := serverSessionCreators[scheme]
+	network, _, _ := splitAddress(args.Listen)
+	creator, ok := serverSessionCreators[network]
 	if !ok || creator == nil {
-		log.Fatalf("Unknown listen scheme: %s", scheme)
+		log.Fatalf("Unknown scheme of listen address: %s", args.Listen)
 	}
 
 	session, err := creator(args)
@@ -144,10 +144,10 @@ type ClientSessionCreator func(args Args) (ClientSession, error)
 var clientSessionCreators map[string]ClientSessionCreator = make(map[string]ClientSessionCreator)
 
 func newClientSession(args Args) ClientSession {
-	scheme, _ := splitSchemeAddr(args.Connect)
-	creator, ok := clientSessionCreators[scheme]
+	network, _, _ := splitAddress(args.Connect)
+	creator, ok := clientSessionCreators[network]
 	if !ok || creator == nil {
-		log.Fatalf("Unknown connect scheme: %s", scheme)
+		log.Fatalf("Unknown scheme of connect address: %s", network)
 	}
 
 	session, err := creator(args)
@@ -168,11 +168,18 @@ func getAvailableConnectSchemes() string {
 	return strings.Join(schemes, ", ")
 }
 
-func splitSchemeAddr(s string) (scheme, addr string) {
+func splitAddress(s string) (network string, tls bool, addr string) {
 	parts := strings.SplitN(s, "://", 2)
 	if len(parts) != 2 {
 		log.Panicf("Failed to split scheme and address from '%s': '://' not found", s)
 	}
+	addr = parts[1]
 
-	return parts[0], parts[1]
+	schemes := strings.SplitN(parts[0], "+", 2)
+	network = schemes[0]
+	if len(schemes) == 2 && schemes[1] == "tls" {
+		tls = true
+	}
+
+	return
 }
