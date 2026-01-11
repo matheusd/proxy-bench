@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"proxy-bench/netx"
 	"sort"
 	"strings"
@@ -35,6 +36,7 @@ func main() {
 	fmt.Println("Key:", *keyPath)
 	fmt.Println("CA:", *caPath)
 	fmt.Println("Pprof:", *pprof)
+	fmt.Println("PID:", os.Getpid())
 
 	args := Args{
 		Listen:   *listen,

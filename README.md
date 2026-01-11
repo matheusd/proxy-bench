@@ -28,3 +28,11 @@ iperf3 -s -p 3443
 ```bash
 iperf3 -c 127.0.0.1 -p 1443 -t 60 -b 1G -V -l 1500
 ```
+
+### Measures
+
+CPU usage (as measured by OS):
+
+```
+$ pidstat -r -u -p <pid> 2 15
+```
